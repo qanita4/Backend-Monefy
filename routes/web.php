@@ -25,4 +25,6 @@ Route::middleware('auth:sanctum')->group(function () {
     
     // Kamu juga bisa tambah route untuk melihat history nanti
     Route::get('/transactions', [TransactionController::class, 'index']);
+
+    Route::get('/dashboard/summary', [WalletController::class, 'getDashboardSummary']);
 });
