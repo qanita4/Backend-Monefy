@@ -32,12 +32,14 @@ class AuthController extends Controller
 
             Auth::login($user);
 
-            $token = $user->createToken('MonefyToken')->plainTextToken;
+            // $token = $user->createToken('MonefyToken')->plainTextToken;
 
-            return redirect("http://localhost:3000/login-success?token=" . $token);
+            //return redirect("http://localhost:3000/login-success?token=" . $token);
+            return redirect()->intended('/dashboard');
 
         } catch (Exception $e) {
-            return redirect("http://localhost:3000/login-failed?error=" . $e->getMessage());
+            // return redirect("http://localhost:3000/login-failed?error=" . $e->getMessage());
+            dd($e->getMessage());
         }
     }
 }
