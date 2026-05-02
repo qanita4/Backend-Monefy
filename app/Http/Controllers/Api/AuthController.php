@@ -2,44 +2,73 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
-use Laravel\Socialite\Facades\Socialite;
-use Exception;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 
 class AuthController extends Controller
 {
-    public function redirectToGoogle()
+    public function register(Request $request)
     {
-        return Socialite::driver('google')->redirect();
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+        ]);
+
+        // Berikan token (opsional, agar setelah daftar langsung login)
+        $token = $user->createToken('Monefy-App')->plainTextToken;
+
+        return response()->json([
+            'message' => 'User registered successfully',
+            'user' => $user,
+            'token' => $token,
+            'token_type' => 'Bearer'
+        ], 201);
     }
 
-    public function handleGoogleCallback()
+    public function login(Request $request)
     {
-        try {
-            $googleUser = Socialite::driver('google')->user();
-            
-            // Cari user berdasarkan email, kalau tidak ada buat baru
-            $user = User::updateOrCreate([
-                'email' => $googleUser->email,
-            ], [
-                'name' => $googleUser->name,
-                'google_id' => $googleUser->id,
-                'avatar' => $googleUser->avatar,
-                'password' => null, // Karena login Google, password dikosongkan
-            ]);
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|email',
+            'password' => 'required|string',
+        ]);
 
-            Auth::login($user);
-
-            // $token = $user->createToken('MonefyToken')->plainTextToken;
-
-            //return redirect("http://localhost:3000/login-success?token=" . $token);
-            return redirect()->intended('/dashboard');
-
-        } catch (Exception $e) {
-            // return redirect("http://localhost:3000/login-failed?error=" . $e->getMessage());
-            dd($e->getMessage());
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 422);
         }
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'message' => 'Invalid email or password'
+            ], 401);
+        }
+
+        $token = $user->createToken('Monefy-App')->plainTextToken;
+
+        return response()->json([
+            'message' => 'Login successful',
+            'user' => $user,
+            'token' => $token,
+            'token_type' => 'Bearer'
+        ], 200);
     }
 }
