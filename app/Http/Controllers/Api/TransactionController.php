@@ -13,56 +13,69 @@ class TransactionController extends Controller
 {
     public function store(Request $request)
     {
-        // 1. Validasi Input sesuai kolom di gambar
-        $request->validate([
-            'wallet_id' => 'required|exists:wallets,id',
-            'title' => 'required|string|max:255',
-            'amount' => 'required|numeric|min:0',
-            'type' => 'required|in:income,expense,transfer',
-            'category' => 'required|string',
+        $validated = $request->validate([
+            'wallet_id'        => 'required|exists:wallets,id',
+            'title'            => 'required|string|max:255',
+            'amount'           => 'required|numeric|min:0',
+            'type'             => 'required|in:income,expense,transfer',
+            'category'         => 'required|string',
             'transaction_date' => 'required|date',
-            'to_wallet_id' => 'nullable|exists:wallets,id', // Hanya untuk transfer
+            'to_wallet_id'     => 'required_if:type,transfer|nullable|exists:wallets,id',
+            'note'             => 'nullable|string',
         ]);
 
-        return DB::transaction(function () use ($request) {
-            // 2. Simpan Data Transaksi
-            $transaction = Transaction::create([
-                'user_id' => Auth::id(),
-                'wallet_id' => $request->wallet_id,
-                'to_wallet_id' => $request->to_wallet_id,
-                'title' => $request->title,
-                'amount' => $request->amount,
-                'type' => $request->type,
-                'category' => $request->category,
-                'note' => $request->note,
-                'transaction_date' => $request->transaction_date,
-                // attachment akan diurus saat fitur AI Scan siap
-            ]);
+        $wallet = Wallet::findOrFail($validated['wallet_id']);
 
-            // 3. Logika Update Saldo Otomatis
-            $wallet = Wallet::findOrFail($request->wallet_id);
-            if ($request->type == 'expense' && $wallet->balance < $request->amount) {
+        // Cek Saldo (Early Return)
+        if ($validated['type'] !== 'income' && $wallet->balance < $validated['amount']) {
             return response()->json(['message' => 'Saldo tidak cukup!'], 400);
-}
+        }
 
-            if ($request->type == 'expense') {
-                $wallet->decrement('balance', $request->amount);
-            } 
-            elseif ($request->type == 'income') {
-                $wallet->increment('balance', $request->amount);
-            } 
-            elseif ($request->type == 'transfer') {
-                // Kurangi saldo pengirim
-                $wallet->decrement('balance', $request->amount);
-                // Tambah saldo penerima
-                $toWallet = Wallet::findOrFail($request->to_wallet_id);
-                $toWallet->increment('balance', $request->amount);
+        try {
+            // Kita simpan hasil transaction ke variabel $result
+            $result = DB::transaction(function () use ($validated, $wallet) {
+                $validated['user_id'] = Auth::id(); 
+                $transaction = Transaction::create($validated);
+
+                if ($validated['type'] === 'income') {
+                    $wallet->increment('balance', $validated['amount']);
+                } else {
+                    $wallet->decrement('balance', $validated['amount']);
+                    
+                    if ($validated['type'] === 'transfer') {
+                        Wallet::findOrFail($validated['to_wallet_id'])->increment('balance', $validated['amount']);
+                    }
+                }
+
+                // Return datanya ke luar closure
+                return $transaction;
+            });
+
+            $result->load('wallet:id,name_wallet'); 
+        
+            // Kalau mau narik wallet tujuan juga jika itu transfer:
+            if ($result->type === 'transfer') {
+                $result->load('destinationWallet:id,name_wallet');
             }
 
+            // Response dikirim di luar closure transaksi
             return response()->json([
-                'message' => 'Transaksi berhasil dicatat dan saldo terupdate!',
-                'data' => $transaction
+                'message' => 'Berhasil!',
+                'data'    => $result
             ], 201);
-        });
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Gagal: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function index(Request $request)
+    {
+        $user = Auth::user();
+        $transactions = $user->transactions()->with('wallet')->latest()->get();
+
+        return response()->json($transactions);
     }
 }

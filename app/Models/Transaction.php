@@ -52,4 +52,12 @@ class Transaction extends Model
     {
         return $this->belongsTo(Wallet::class, 'to_wallet_id');
     }
+
+    protected $appends = ['wallet_name']; // Biar otomatis muncul di JSON
+
+    public function getWalletNameAttribute()
+    {
+        // Ngambil dari relasi wallet
+        return $this->wallet->name_wallet ?? 'Unknown';
+    }
 }
