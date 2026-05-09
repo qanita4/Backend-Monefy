@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use App\Models\Wallet;
-use App\Models\SavingGoal;
+use App\Models\Wishlist;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -22,7 +22,7 @@ class TransactionController extends Controller
             'category'         => 'required|string',
             'transaction_date' => 'required|date',
             'to_wallet_id'     => 'required_if:type,transfer|nullable|exists:wallets,id',
-            'saving_goal_id'   => 'nullable|exists:saving_goals,id', // Relasi ke tabungan
+            'wishlist_id'      => 'nullable|exists:wishlists,id', // Relasi ke wishlist
             'note'             => 'nullable|string',
         ]);
 
@@ -40,10 +40,10 @@ class TransactionController extends Controller
             }
         }
 
-        if (!empty($validated['saving_goal_id'])) {
-            $savingGoal = SavingGoal::findOrFail($validated['saving_goal_id']);
+        if (!empty($validated['wishlist_id'])) {
+            $wishlist = Wishlist::findOrFail($validated['wishlist_id']);
 
-            if ($savingGoal->user_id !== Auth::id()) {
+            if ($wishlist->user_id !== Auth::id()) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
         }
@@ -70,16 +70,6 @@ class TransactionController extends Controller
                             Wallet::findOrFail($validated['to_wallet_id'])->increment('balance', $validated['amount']);
                         }
                         
-                        // LOGIKA BARU: Jika transfer ke Saving Goal
-                        if ($validated['saving_goal_id']) {
-                            $goal = SavingGoal::findOrFail($validated['saving_goal_id']);
-                            $goal->increment('current_amount', $validated['amount']);
-                            
-                            // Update status jika target tercapai
-                            if ($goal->current_amount >= $goal->target_amount) {
-                                $goal->update(['status' => 'achieved']);
-                            }
-                        }
                     }
                 }
 
@@ -115,13 +105,13 @@ class TransactionController extends Controller
             'category'         => 'nullable|string',
             'transaction_date' => 'nullable|date',
             'note'             => 'nullable|string',
-            'saving_goal_id'   => 'nullable|exists:saving_goals,id',
+            'wishlist_id'      => 'nullable|exists:wishlists,id',
         ]);
 
-        if (!empty($validated['saving_goal_id'])) {
-            $savingGoal = SavingGoal::findOrFail($validated['saving_goal_id']);
+        if (!empty($validated['wishlist_id'])) {
+            $wishlist = Wishlist::findOrFail($validated['wishlist_id']);
 
-            if ($savingGoal->user_id !== Auth::id()) {
+            if ($wishlist->user_id !== Auth::id()) {
                 return response()->json(['message' => 'Unauthorized'], 403);
             }
         }
@@ -131,8 +121,6 @@ class TransactionController extends Controller
                 $wallet = $transaction->wallet;
                 $oldAmount = (float) $transaction->amount;
                 $oldType = $transaction->type;
-                $oldGoalId = $transaction->saving_goal_id;
-
                 // 1. REVERSE (Kembalikan saldo ke kondisi semula sebelum diedit)
                 if ($oldType === 'income') {
                     $wallet->decrement('balance', $oldAmount);
@@ -141,9 +129,6 @@ class TransactionController extends Controller
                     if ($oldType === 'transfer') {
                         if ($transaction->to_wallet_id) {
                             Wallet::findOrFail($transaction->to_wallet_id)->decrement('balance', $oldAmount);
-                        }
-                        if ($oldGoalId) {
-                            SavingGoal::findOrFail($oldGoalId)->decrement('current_amount', $oldAmount);
                         }
                     }
                 }
@@ -157,12 +142,6 @@ class TransactionController extends Controller
                     if ($oldType === 'transfer') {
                         if ($transaction->to_wallet_id) {
                             Wallet::findOrFail($transaction->to_wallet_id)->increment('balance', $newAmount);
-                        }
-                        // Jika saving_goal_id berubah atau tetap ada
-                        $newGoalId = $validated['saving_goal_id'] ?? $oldGoalId;
-                        if ($newGoalId) {
-                            $goal = SavingGoal::findOrFail($newGoalId);
-                            $goal->increment('current_amount', $newAmount);
                         }
                     }
                 }
@@ -193,7 +172,7 @@ class TransactionController extends Controller
                 $wallet = $transaction->wallet;
                 $amount = (float) $transaction->amount;
 
-                // Reverse balance & saving goal progress
+                // Reverse balance
                 if ($transaction->type === 'income') {
                     $wallet->decrement('balance', $amount);
                 } else {
@@ -202,9 +181,6 @@ class TransactionController extends Controller
                     if ($transaction->type === 'transfer') {
                         if ($transaction->to_wallet_id) {
                             Wallet::findOrFail($transaction->to_wallet_id)->decrement('balance', $amount);
-                        }
-                        if ($transaction->saving_goal_id) {
-                            SavingGoal::findOrFail($transaction->saving_goal_id)->decrement('current_amount', $amount);
                         }
                     }
                 }
@@ -222,7 +198,7 @@ class TransactionController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $transactions = $user->transactions()->with(['wallet', 'savingGoal'])->latest()->get();
+        $transactions = $user->transactions()->with(['wallet', 'wishlist'])->latest()->get();
 
         return response()->json($transactions);
     }

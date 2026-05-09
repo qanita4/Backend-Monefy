@@ -12,8 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('transactions', function (Blueprint $table) {
-            // Menambahkan relasi ke tabel saving_goals
-            $table->foreignId('saving_goal_id')->nullable()->constrained()->onDelete('set null');
+            // Menambahkan relasi ke tabel wishlists
+            $table->foreignId('wishlist_id')->nullable()->constrained('wishlists')->nullOnDelete();
         });
     }
 
@@ -23,7 +23,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('transactions', function (Blueprint $table) {
-            //
+            $table->dropForeign(['wishlist_id']);
+            $table->dropColumn('wishlist_id');
         });
     }
 };

@@ -14,7 +14,7 @@ class Transaction extends Model
         'user_id',
         'wallet_id',
         'to_wallet_id',
-        'saving_goal_id',
+        'wishlist_id',
         'title',
         'amount',
         'type',
@@ -62,7 +62,8 @@ class Transaction extends Model
         return $this->wallet->name_wallet ?? 'Unknown';
     }
 
-    public function savingGoal() {
-    return $this->belongsTo(SavingGoal::class);
-}
+    public function wishlist()
+    {
+        return $this->belongsTo(Wishlist::class, 'wishlist_id');
+    }
 }
