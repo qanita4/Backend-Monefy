@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('wallets', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+        Schema::table('transactions', function (Blueprint $table) {
+            // Menambahkan relasi ke tabel saving_goals
+            $table->foreignId('saving_goal_id')->nullable()->constrained()->onDelete('set null');
         });
     }
 
@@ -22,6 +22,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('wallets');
+        Schema::table('transactions', function (Blueprint $table) {
+            //
+        });
     }
 };

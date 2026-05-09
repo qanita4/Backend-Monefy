@@ -14,6 +14,7 @@ class Transaction extends Model
         'user_id',
         'wallet_id',
         'to_wallet_id',
+        'saving_goal_id',
         'title',
         'amount',
         'type',
@@ -60,4 +61,8 @@ class Transaction extends Model
         // Ngambil dari relasi wallet
         return $this->wallet->name_wallet ?? 'Unknown';
     }
+
+    public function savingGoal() {
+    return $this->belongsTo(SavingGoal::class);
+}
 }
