@@ -6,13 +6,16 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    public $withinTransaction = false;
+
     public function up(): void
     {
         if (!Schema::hasTable('wallets')) {
             Schema::create('wallets', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('user_id')->constrained()->onDelete('cascade');
+                $table->unsignedBigInteger('user_id');
                 $table->string('name_wallet');
+                $table->string('category')->default('Cash');
                 $table->decimal('balance', 15, 2)->default(0);
                 $table->timestamps();
             });

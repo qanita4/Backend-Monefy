@@ -6,14 +6,16 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    public $withinTransaction = false;
+
     public function up(): void
     {
         if (!Schema::hasTable('transactions')) {
             Schema::create('transactions', function (Blueprint $table) {
                 $table->id();
-                $table->foreignId('user_id')->constrained()->onDelete('cascade');
-                $table->foreignId('wallet_id')->constrained('wallets')->onDelete('cascade');
-                $table->foreignId('to_wallet_id')->nullable()->constrained('wallets')->nullOnDelete();
+                $table->unsignedBigInteger('user_id');
+                $table->unsignedBigInteger('wallet_id');
+                $table->unsignedBigInteger('to_wallet_id')->nullable();
                 $table->string('title');
                 $table->decimal('amount', 15, 2);
                 $table->string('type');
@@ -21,7 +23,7 @@ return new class extends Migration
                 $table->string('attachment')->nullable();
                 $table->text('note')->nullable();
                 $table->dateTime('transaction_date');
-                $table->foreignId('wishlist_id')->nullable()->constrained('wishlists')->nullOnDelete();
+                $table->unsignedBigInteger('wishlist_id')->nullable();
                 $table->timestamps();
             });
         }

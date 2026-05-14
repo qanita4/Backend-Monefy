@@ -14,7 +14,7 @@ class Wallet extends Model
         'user_id',
         'name_wallet',
         'balance',
-        'categort',
+        'category',
     ];
 
     /**

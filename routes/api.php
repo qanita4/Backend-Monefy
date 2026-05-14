@@ -6,13 +6,17 @@ use App\Http\Controllers\Api\TransactionController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\WishlistController;
+use App\Http\Controllers\Api\AiScanController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/ai/scan-receipt', [AiScanController::class, 'scan']);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/wallets', [WalletController::class, 'store']);
+    Route::get('/wallets', [WalletController::class, 'index']);
 });
+
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/wishlists', [WishlistController::class, 'index']);

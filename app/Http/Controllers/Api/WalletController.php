@@ -29,6 +29,16 @@ class WalletController extends Controller
         ], 201);
     }
 
+    public function index()
+    {
+        $wallets = Wallet::where('user_id', Auth::id())->orderBy('name_wallet', 'Asc')->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $wallets
+        ]);
+    }
+
     public function getDashboardSummary()
     {
        $userId = Auth::id();
