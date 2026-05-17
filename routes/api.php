@@ -33,7 +33,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/dashboard/transactions', [DashboardController::class, 'getTransactions']);
     Route::post('/bills', [\App\Http\Controllers\Api\BillController::class, 'store']);
     Route::get('/bills', [\App\Http\Controllers\Api\BillController::class, 'index']);
-    Route::put('/bills/{id}/pay', [\App\Http\Controllers\Api\BillController::class, 'markAsPaid']);
-    Route::put('/bills/{id}/unpay', [\App\Http\Controllers\Api\BillController::class, 'markAsUnpaid']);
+    Route::put('/bills/{bill}', [\App\Http\Controllers\Api\BillController::class, 'update']);
 });
 
