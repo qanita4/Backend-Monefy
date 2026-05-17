@@ -12,12 +12,20 @@ class BillController extends Controller
     /**
      * Melihat semua daftar tagihan user.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Mengambil tagihan milik user yang sedang login
-        $bills = Bill::where('user_id', Auth::id())
-                     ->orderBy('due_date', 'asc')
-                     ->get();
+        // 1. Ambil query pencarian status jika ada (misal: ?status=paid atau ?status=unpaid)
+        $statusFilter = $request->query('status');
+
+        // 2. Query dasar: hanya mengambil tagihan milik user yang sedang login
+        $query = Bill::where('user_id', Auth::id())->orderBy('due_date', 'asc');
+
+        // 3. Jika frontend mengirimkan parameter status yang valid, lakukan filter
+        if (in_array($statusFilter, ['paid', 'unpaid'])) {
+            $query->where('status', $statusFilter);
+        }
+
+        $bills = $query->get();
 
         return response()->json([
             'status' => 'success',
