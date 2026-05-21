@@ -21,8 +21,8 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/wishlists', [WishlistController::class, 'index']);
     Route::post('/wishlists', [WishlistController::class, 'store']);
-    Route::put('/wishlists/{id}', [WishlistController::class, 'update']);
-    Route::put('/wishlists/{id}/complete', [WishlistController::class, 'completePurchase']);
+    Route::put('/wishlists/{wishlist}', [WishlistController::class, 'update']); 
+    Route::delete('/wishlists/{wishlist}', [WishlistController::class, 'destroy']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {

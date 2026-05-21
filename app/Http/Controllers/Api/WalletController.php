@@ -13,32 +13,22 @@ class WalletController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name_wallet' => 'required|string|max:255', // Contoh: "Bank BCA", "Gopay", "Cash"
+            'name_wallet' => 'required|string|max:255', 
             'balance' => 'required|numeric|min:0',
-            'category' => 'nullable|string|max:255', // Contoh: "bank", "e-wallet", "cash" 
+            'category' => 'nullable|string|max:255',
         ]);
 
         $wallet = Wallet::create([
-            'user_id' => Auth::id(), // Mengambil ID user yang sedang login
+            'user_id' => Auth::id(), 
             'name_wallet' => $request->name_wallet,
             'balance' => $request->balance,
-            'category' => $request->category ?? 'general', // Default kategori jika tidak diberikan
+            'category' => $request->category ?? 'Default',
         ]);
 
         return response()->json([
             'message' => 'Dompet berhasil ditambahkan!',
             'data' => $wallet
         ], 201);
-    }
-
-    public function index()
-    {
-        $wallets = Wallet::where('user_id', Auth::id())->orderBy('name_wallet', 'Asc')->get();
-
-        return response()->json([
-            'status' => 'success',
-            'data' => $wallets
-        ]);
     }
 
     public function getDashboardSummary()
@@ -82,5 +72,42 @@ class WalletController extends Controller
                 'recent_transactions' => $recentTransactions
             ]
         ]);
+    }
+
+    public function update(Request $request, $id)
+    {
+        $wallet = Wallet::findOrFail($id);
+
+        if ($wallet->user_id !== Auth::id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $request->validate([
+            'name_wallet' => 'nullable|string|max:255',
+            'balance' => 'nullable|numeric|min:0',
+            'category' => 'nullable|string|max:255',
+        ]);
+
+        $wallet->update($request->only('name_wallet', 'balance', 'category'));
+
+        return response()->json([
+            'message' => 'wallet berhasil diperbarui',
+            'data' => $wallet
+        ]);
+    }
+
+    public function destroy($id)
+    {
+        $wallet = Wallet::findOrFail($id);
+
+        if ($wallet->user_id !== Auth::id()) {
+            return response()->json(['message' => 'Unauthorized'], 403);
+        }
+
+        $wallet->delete();
+
+        return response()->json([
+            'message' => 'wallet berhasil dihapus'
+        ], 200);
     }
 }
