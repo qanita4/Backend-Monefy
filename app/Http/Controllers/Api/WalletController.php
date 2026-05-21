@@ -15,12 +15,14 @@ class WalletController extends Controller
         $request->validate([
             'name_wallet' => 'required|string|max:255', // Contoh: "Bank BCA", "Gopay", "Cash"
             'balance' => 'required|numeric|min:0',
+            'category' => 'nullable|string|max:255', // Contoh: "bank", "e-wallet", "cash" 
         ]);
 
         $wallet = Wallet::create([
             'user_id' => Auth::id(), // Mengambil ID user yang sedang login
             'name_wallet' => $request->name_wallet,
             'balance' => $request->balance,
+            'category' => $request->category ?? 'general', // Default kategori jika tidak diberikan
         ]);
 
         return response()->json([
