@@ -31,6 +31,17 @@ class WalletController extends Controller
         ], 201);
     }
 
+    public function index()
+    {
+        // Mengambil semua wallet aktif milik user yang sedang login
+        $wallets = Wallet::where('user_id', Auth::id())->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $wallets
+        ], 200);
+    }
+
     public function getDashboardSummary()
     {
        $userId = Auth::id();
