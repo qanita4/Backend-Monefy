@@ -16,7 +16,7 @@ Route::post('/ai/scan-receipt', [AiScanController::class, 'scan']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/wallets', [WalletController::class, 'store']);
     Route::get('/wallets', [WalletController::class, 'index']);
-    route::get('/wallets{id}', [WalletController::class, 'update']);
+    route::put('/wallets{id}', [WalletController::class, 'update']);
     route::delete('/wallets{id}', [WalletController::class, 'destroy']);
 });
 
