@@ -16,14 +16,15 @@ Route::post('/ai/scan-receipt', [AiScanController::class, 'scan']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/wallets', [WalletController::class, 'store']);
     Route::get('/wallets', [WalletController::class, 'index']);
-    route::put('/wallets{id}', [WalletController::class, 'update']);
-    route::delete('/wallets{id}', [WalletController::class, 'destroy']);
+    Route::put('/wallets/{id}', [WalletController::class, 'update']);
+    Route::delete('/wallets/{id}', [WalletController::class, 'destroy']);
 });
 
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/wishlists', [WishlistController::class, 'index']);
     Route::post('/wishlists', [WishlistController::class, 'store']);
+    Route::get('/wishlists/{wishlist}', [WishlistController::class, 'show']);
     Route::put('/wishlists/{wishlist}', [WishlistController::class, 'update']); 
     Route::delete('/wishlists/{wishlist}', [WishlistController::class, 'destroy']);
 });
