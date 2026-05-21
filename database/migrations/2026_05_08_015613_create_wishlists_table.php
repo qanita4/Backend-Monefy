@@ -11,7 +11,9 @@ return new class extends Migration
         Schema::create('wishlists', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('name');
+            $table->string('title'); 
+            $table->decimal('target_amount', 15, 2)->default(0); 
+            $table->text('notes')->nullable(); 
             $table->string('status')->default('belum_terbeli');
             $table->timestamps();
         });

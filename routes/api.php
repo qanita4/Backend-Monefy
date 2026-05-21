@@ -22,6 +22,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/wishlists', [WishlistController::class, 'index']);
     Route::post('/wishlists', [WishlistController::class, 'store']);
     Route::put('/wishlists/{id}', [WishlistController::class, 'update']);
+    Route::put('/wishlists/{id}/complete', [WishlistController::class, 'completePurchase']);
 });
 
 Route::middleware('auth:sanctum')->group(function () {
