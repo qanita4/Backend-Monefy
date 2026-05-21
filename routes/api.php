@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\WishlistController;
 use App\Http\Controllers\Api\AiScanController;
+use App\Http\Controllers\Api\AnalyticController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
@@ -28,6 +29,14 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::middleware('auth:sanctum')->group(function () {
+    // Grouping route analytics
+    Route::prefix('analytic')->group(function () {
+        Route::get('/summary', [AnalyticController::class, 'getSummary']);
+        Route::get('/top-categories', [AnalyticController::class, 'getTopCategories']);
+    });
+});
+
+Route::middleware('auth:sanctum')->group(function () {
     Route::post('/transactions', [TransactionController::class, 'store']);
     Route::get('/transactions', [TransactionController::class, 'index']);
     Route::put('/transactions/{id}', [TransactionController::class, 'update']);
@@ -39,6 +48,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/bills/{bill}', [\App\Http\Controllers\Api\BillController::class, 'update']);
     Route::delete('/bills/{bill}', [\App\Http\Controllers\Api\BillController::class, 'destroy']);
     Route::post('/profile/avatar', [\App\Http\Controllers\Api\ProfileController::class, 'uploadAvatar']);
-
 });
 
