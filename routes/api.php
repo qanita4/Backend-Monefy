@@ -35,5 +35,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/bills', [\App\Http\Controllers\Api\BillController::class, 'store']);
     Route::get('/bills', [\App\Http\Controllers\Api\BillController::class, 'index']);
     Route::put('/bills/{bill}', [\App\Http\Controllers\Api\BillController::class, 'update']);
+    Route::delete('/bills/{bill}', [\App\Http\Controllers\Api\BillController::class, 'destroy']);
+    Route::post('/profile/avatar', [\App\Http\Controllers\Api\ProfileController::class, 'uploadAvatar']);
+
 });
 
