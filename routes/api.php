@@ -31,9 +31,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
     // Grouping route analytics
-    Route::prefix('analytic')->group(function () {
+    Route::prefix('analytics')->group(function () {
         Route::get('/summary', [AnalyticController::class, 'getSummary']);
         Route::get('/top-categories', [AnalyticController::class, 'getTopCategories']);
+        Route::get('/top-expenses', [AnalyticController::class, 'getCategoriesSummary']);
     });
 });
 
@@ -49,5 +50,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/bills/{bill}', [\App\Http\Controllers\Api\BillController::class, 'update']);
     Route::delete('/bills/{bill}', [\App\Http\Controllers\Api\BillController::class, 'destroy']);
     Route::post('/profile/avatar', [\App\Http\Controllers\Api\ProfileController::class, 'uploadAvatar']);
+    Route::get('/profile', [\App\Http\Controllers\Api\ProfileController::class, 'index']);
+    Route::post('/logout', [\App\Http\Controllers\Api\ProfileController::class, 'logout']);
 });
 
