@@ -14,23 +14,33 @@ class AnalyticController extends Controller
         /** @var \App\Models\User $user */
         $user = auth()->user();
         $trend = $request->query('trend', 'weekly');
-        $now = now();
+
+        $month = (int) $request->query('month', now()->month);
+        $year  = (int) $request->query('year', now()->year);
+        $week  = (int) $request->query('week', 1);
+
+        $now = now()->setYear($year)->setMonth($month);
 
         $incomeQuery = $user->transactions()->where('type', 'income');
         $expenseQuery = $user->transactions()->where('type', 'expense');
 
         // Filter tanggal di level database (Sama seperti logika awalmu)
         if ($trend === 'weekly') {
-            $start = $now->copy()->startOfWeek();
-            $end = $now->copy()->endOfWeek();
+            $firstDayOfMonth = $now->copy()->startOfMonth();
+
+            $start = $firstDayOfMonth->copy()->addDays(($week - 1) * 7);
+            $end = $start->copy()->addDays(6);
+
             $incomeQuery->whereBetween('transaction_date', [$start, $end]);
             $expenseQuery->whereBetween('transaction_date', [$start, $end]);
         } elseif ($trend === 'monthly') {
-            $incomeQuery->whereMonth('transaction_date', $now->month)->whereYear('transaction_date', $now->year);
-            $expenseQuery->whereMonth('transaction_date', $now->month)->whereYear('transaction_date', $now->year);
+            $incomeQuery->whereMonth('transaction_date', $month)
+                        ->whereYear('transaction_date', $year);
+            $expenseQuery->whereMonth('transaction_date', $month)
+                        ->whereYear('transaction_date', $year);
         } elseif ($trend === 'yearly') {
-            $incomeQuery->whereYear('transaction_date', $now->year);
-            $expenseQuery->whereYear('transaction_date', $now->year);
+            $incomeQuery->whereYear('transaction_date', $year);
+            $expenseQuery->whereYear('transaction_date', $year);
         }
 
         // Ambil totalan tren langsung dari database (Cepat & Ringan)
@@ -56,13 +66,13 @@ class AnalyticController extends Controller
         // Mapping loop di PHP sekarang sangat ringan karena hanya mencocokkan key yang sudah jadi
         if ($trend === 'weekly') {
             for ($i = 0; $i < 7; $i++) {
-                $date = $now->copy()->startOfWeek()->addDays($i);
+                $date = $start->copy()->addDays($i);
                 $labels[] = $date->format('D');
                 $incomeData[] = $incomeChartRaw->get($date->format('Y-m-d'), 0);
                 $expenseData[] = $expenseChartRaw->get($date->format('Y-m-d'), 0);
             }
         } elseif ($trend === 'monthly') {
-            $daysInMonth = $now->daysInMonth;
+            $daysInMonth = $now->copy()->startOfMonth()->daysInMonth;
             for ($i = 1; $i <= $daysInMonth; $i++) {
                 $date = $now->copy()->startOfMonth()->addDays($i - 1);
                 $labels[] = (string) $i;
@@ -74,7 +84,7 @@ class AnalyticController extends Controller
                 $date = $now->copy()->startOfYear()->addMonths($i - 1);
                 $labels[] = $date->format('M');
                 // Penyesuaian format key tahunan database
-                $key = $driver === 'mysql' ? $date->format('Y-m') : ($driver === 'pgsql' ? $date->format('Y-mm') : $date->format('m'));
+                $key = $date->format('Y-m') ; 
                 $incomeData[] = $incomeChartRaw->get($key, 0);
                 $expenseData[] = $expenseChartRaw->get($key, 0);
             }
@@ -87,6 +97,9 @@ class AnalyticController extends Controller
             'chart_labels'  => $labels,
             'chart_income'  => $incomeData,
             'chart_expense' => $expenseData,
+            'driver' => $driver,
+            'dateFormat' => $dateFormat,
+            'expenseChartRaw' => $expenseChartRaw->toArray(),
         ]);
     }
 
