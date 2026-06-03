@@ -9,50 +9,69 @@ use Illuminate\Support\Str;
 
 class ProfileController extends Controller
 {
+    public function index(Request $request)
+    {
+        $user = $request->user();
+
+        return response()->json([
+            'name'   => $user->name,
+            'email'  => $user->email,
+            // 1. Ambil langsung dari kolom database bernama 'url'
+            'avatar' => $user->avatar, 
+        ]);
+    }
+
     public function uploadAvatar(Request $request)
     {
-        // 1. Validasi ketat di sisi backend (Wajib!)
         $request->validate([
-            'avatar' => 'required|image|mimes:jpeg,png,jpg|max:500', // Maksimal 2MB
+            // max:2048 agar batasnya benar-benar 2MB (2048 KB)
+            'avatar' => 'required|image|mimes:jpeg,png,jpg|max:2048', 
         ]);
 
         $user = $request->user(); 
         $file = $request->file('avatar');
 
-        // 2. Buat nama file yang unik agar tidak bentrok di Supabase
         $fileName = 'avatar-' . $user->id . '-' . Str::random(8) . '.' . $file->getClientOriginalExtension();
 
         try {
-            // 3. Upload langsung ke Supabase Storage menggunakan driver S3
-            // File akan otomatis masuk ke bucket 'avatars' yang didefinisikan di .env
+            // Upload langsung ke Supabase Storage menggunakan driver S3
             $path = Storage::disk('s3')->putFileAs('', $file, $fileName, 'public');
 
-            // 4. Hapus foto profil lama jika ada (Biar Supabase kamu gak penuh sampah)
-            if ($user->avatar_url) {
-                $oldFileName = basename($user->avatar_url);
-                Storage::disk('s3')->delete($oldFileName);
+            // 2. Cek foto lama di kolom database 'url' agar Supabase tidak penuh sampah
+            if ($user->url) {
+                $oldFileName = basename($user->url);
+                if (Storage::disk('s3')->exists($oldFileName)) {
+                    Storage::disk('s3')->delete($oldFileName);
+                }
             }
 
-            // 5. Dapatkan URL Publik dari Supabase
+            // Dapatkan URL Publik dari Supabase
             $publicUrl = Storage::disk('s3')->url($fileName);
 
-            // 6. Simpan URL tersebut ke database kamu
+            // 3. Simpan URL absolut tersebut ke kolom database 'url'
             $user->update([
-                'avatar_url' => $publicUrl
+                'url' => $publicUrl
             ]);
 
-            // 7. Kembalikan respon sukses ke Front-end (Web & Mobile)
+            // 4. Kembalikan key 'avatar' ke frontend agar tidak merusak JS frontend kamu
             return response()->json([
-                'status' => 'success',
+                'status'  => 'success',
                 'message' => 'Foto profil berhasil diperbarui.',
-                'avatar_url' => $publicUrl
+                'avatar'  => $publicUrl
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
-                'status' => 'error',
+                'status'  => 'error',
                 'message' => 'Gagal mengupload gambar: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    public function logout(Request $request)
+    {
+        $request->user()->currentAccessToken()->delete();
+
+        return response()->json(['message' => 'Logged out successfully']);
     }
 }
