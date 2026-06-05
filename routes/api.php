@@ -43,14 +43,19 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/transactions', [TransactionController::class, 'index']);
     Route::put('/transactions/{id}', [TransactionController::class, 'update']);
     Route::delete('/transactions/{id}', [TransactionController::class, 'destroy']);
+
     Route::get('/dashboard/summary', [DashboardController::class, 'getSummary']);
     Route::get('/dashboard/transactions', [DashboardController::class, 'getTransactions']);
+
     Route::post('/bills', [\App\Http\Controllers\Api\BillController::class, 'store']);
     Route::get('/bills', [\App\Http\Controllers\Api\BillController::class, 'index']);
     Route::put('/bills/{bill}', [\App\Http\Controllers\Api\BillController::class, 'update']);
     Route::delete('/bills/{bill}', [\App\Http\Controllers\Api\BillController::class, 'destroy']);
+
     Route::post('/profile/avatar', [\App\Http\Controllers\Api\ProfileController::class, 'uploadAvatar']);
     Route::get('/profile', [\App\Http\Controllers\Api\ProfileController::class, 'index']);
     Route::post('/logout', [\App\Http\Controllers\Api\ProfileController::class, 'logout']);
+
+    Route::post('/chat', [\App\Http\Controllers\Api\AiController::class, 'chat']);
 });
 
