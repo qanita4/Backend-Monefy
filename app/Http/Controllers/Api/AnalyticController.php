@@ -97,45 +97,93 @@ class AnalyticController extends Controller
             'chart_labels'  => $labels,
             'chart_income'  => $incomeData,
             'chart_expense' => $expenseData,
-            'driver' => $driver,
-            'dateFormat' => $dateFormat,
-            'expenseChartRaw' => $expenseChartRaw->toArray(),
         ]);
     }
 
     public function getTopCategories(Request $request): JsonResponse
     {
-        $user = auth()->user();
-        $trend = $request->query('trend', 'weekly');
-        $now = now();
+    $user = auth()->user();
 
-        $expenseQuery = $user->transactions()->where('type', 'expense');
-        $incomeQuery = $user->transactions()->where('type', 'income');
+    $trend = $request->query('trend', 'weekly');
+    $month = (int) $request->query('month', now()->month);
+    $year  = (int) $request->query('year', now()->year);
+    $week  = (int) $request->query('week', 1);
 
-        if ($trend === 'weekly') {
-            $start = $now->copy()->startOfWeek();
-            $end = $now->copy()->endOfWeek();
-            $expenseQuery->whereBetween('transaction_date', [$start, $end]);
-            $incomeQuery->whereBetween('transaction_date', [$start, $end]);
-        } elseif ($trend === 'monthly') {
-            $expenseQuery->whereMonth('transaction_date', $now->month)->whereYear('transaction_date', $now->year);
-            $incomeQuery->whereMonth('transaction_date', $now->month)->whereYear('transaction_date', $now->year);
-        } elseif ($trend === 'yearly') {
-            $expenseQuery->whereYear('transaction_date', $now->year);
-            $incomeQuery->whereYear('transaction_date', $now->year);
-        }
+    $expenseQuery = $user->transactions()->where('type', 'expense');
+    $incomeQuery = $user->transactions()->where('type', 'income');
 
-        // Method helper ditarik ke bawah agar controller tetap rapi
-        [$expenses, $totalExpense] = $this->getCategoriesSummary($expenseQuery);
-        [$incomes, $totalIncome] = $this->getCategoriesSummary($incomeQuery);
+    if ($trend === 'weekly') {
 
-        return response()->json([
-            'expenses'      => $expenses,
-            'incomes'       => $incomes,
-            'total_expense' => $totalExpense,
-            'total_income'  => $totalIncome
-        ]);
+        $startDay = (($week - 1) * 7) + 1;
+        $endDay = min(
+            $week * 7,
+            \Carbon\Carbon::create($year, $month)->daysInMonth
+        );
+
+        $start = \Carbon\Carbon::create($year, $month, $startDay)->startOfDay();
+        $end = \Carbon\Carbon::create($year, $month, $endDay)->endOfDay();
+
+        $expenseQuery->whereBetween('transaction_date', [$start, $end]);
+        $incomeQuery->whereBetween('transaction_date', [$start, $end]);
+
+    } elseif ($trend === 'monthly') {
+
+        $expenseQuery->whereMonth('transaction_date', $month)
+                     ->whereYear('transaction_date', $year);
+
+        $incomeQuery->whereMonth('transaction_date', $month)
+                    ->whereYear('transaction_date', $year);
+
+    } elseif ($trend === 'yearly') {
+
+        $expenseQuery->whereYear('transaction_date', $year);
+        $incomeQuery->whereYear('transaction_date', $year);
     }
+
+    [$expenses, $totalExpense] = $this->getCategoriesSummary($expenseQuery);
+    [$incomes, $totalIncome] = $this->getCategoriesSummary($incomeQuery);
+
+    return response()->json([
+        'expenses'      => $expenses,
+        'incomes'       => $incomes,
+        'total_expense' => $totalExpense,
+        'total_income'  => $totalIncome,
+    ]);
+    }
+
+    // public function getTopCategories(Request $request): JsonResponse
+    // {
+    //     $user = auth()->user();
+    //     $trend = $request->query('trend', 'weekly');
+    //     $now = now();
+
+    //     $expenseQuery = $user->transactions()->where('type', 'expense');
+    //     $incomeQuery = $user->transactions()->where('type', 'income');
+
+    //     if ($trend === 'weekly') {
+    //         $start = $now->copy()->startOfWeek();
+    //         $end = $now->copy()->endOfWeek();
+    //         $expenseQuery->whereBetween('transaction_date', [$start, $end]);
+    //         $incomeQuery->whereBetween('transaction_date', [$start, $end]);
+    //     } elseif ($trend === 'monthly') {
+    //         $expenseQuery->whereMonth('transaction_date', $now->month)->whereYear('transaction_date', $now->year);
+    //         $incomeQuery->whereMonth('transaction_date', $now->month)->whereYear('transaction_date', $now->year);
+    //     } elseif ($trend === 'yearly') {
+    //         $expenseQuery->whereYear('transaction_date', $now->year);
+    //         $incomeQuery->whereYear('transaction_date', $now->year);
+    //     }
+
+    //     // Method helper ditarik ke bawah agar controller tetap rapi
+    //     [$expenses, $totalExpense] = $this->getCategoriesSummary($expenseQuery);
+    //     [$incomes, $totalIncome] = $this->getCategoriesSummary($incomeQuery);
+
+    //     return response()->json([
+    //         'expenses'      => $expenses,
+    //         'incomes'       => $incomes,
+    //         'total_expense' => $totalExpense,
+    //         'total_income'  => $totalIncome
+    //     ]);
+    // }
 
     // ==========================================
     // UTILITY & OPTIMIZATION HELPERS
