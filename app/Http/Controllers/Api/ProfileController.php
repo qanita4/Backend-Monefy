@@ -16,7 +16,6 @@ class ProfileController extends Controller
         return response()->json([
             'name'   => $user->name,
             'email'  => $user->email,
-            // 1. Ambil langsung dari kolom database bernama 'url'
             'avatar' => $user->avatar, 
         ]);
     }
@@ -37,23 +36,27 @@ class ProfileController extends Controller
             // Upload langsung ke Supabase Storage menggunakan driver S3
             $path = Storage::disk('s3')->putFileAs('', $file, $fileName, 'public');
 
-            // 2. Cek foto lama di kolom database 'url' agar Supabase tidak penuh sampah
-            if ($user->url) {
-                $oldFileName = basename($user->url);
+            // Cek foto lama di kolom database 'avatar' agar Supabase tidak penuh sampah
+            if ($user->avatar) {
+                $oldFileName = basename($user->avatar);
                 if (Storage::disk('s3')->exists($oldFileName)) {
                     Storage::disk('s3')->delete($oldFileName);
                 }
             }
 
+            Storage::disk('s3')->putFileAs('', $file, $fileName, 'public');
+
             // Dapatkan URL Publik dari Supabase
             $publicUrl = Storage::disk('s3')->url($fileName);
 
-            // 3. Simpan URL absolut tersebut ke kolom database 'url'
+            // Simpan URL absolut tersebut ke kolom database 'avatar'
             $user->update([
-                'url' => $publicUrl
+                'avatar' => $publicUrl
             ]);
 
-            // 4. Kembalikan key 'avatar' ke frontend agar tidak merusak JS frontend kamu
+            $user->refresh();
+
+            // Kembalikan key 'avatar' ke frontend sesuai response yang diharapkan
             return response()->json([
                 'status'  => 'success',
                 'message' => 'Foto profil berhasil diperbarui.',
